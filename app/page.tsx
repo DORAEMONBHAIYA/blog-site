@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getDb, type ReleasePageRow } from "@/lib/db";
-import { platformLabel, siteUrl } from "@/lib/site";
+import { COUNTRY_LABELS, platformLabel } from "@/lib/site";
 
 export const revalidate = 3600;
 
@@ -11,9 +11,22 @@ async function getLatestReleases(): Promise<ReleasePageRow[]> {
     .select("*, titles!inner(*), generated_content(*)")
     .eq("processed", true)
     .order("release_date", { ascending: false, nullsFirst: false })
-    .limit(24);
+    .limit(48);
   if (error) throw error;
-  return (data ?? []) as unknown as ReleasePageRow[];
+  // One card per title+country: language variants share a page, so prefer
+  // the English row and drop the rest (no duplicate-looking cards).
+  const seen = new Set<string>();
+  const out: ReleasePageRow[] = [];
+  const rows = (data ?? []) as unknown as ReleasePageRow[];
+  for (const r of [...rows].sort((a, b) => Number(a.language !== "en") - Number(b.language !== "en"))) {
+    const key = `${r.title_id}/${r.country}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  return out
+    .sort((a, b) => (b.release_date ?? "").localeCompare(a.release_date ?? ""))
+    .slice(0, 24);
 }
 
 export default async function Home() {
@@ -37,9 +50,7 @@ export default async function Home() {
 
       {dbError ? (
         <p className="mt-8 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          Couldn&apos;t reach the database ({dbError}). If this is a fresh
-          setup, check <code>.env.local</code> and run the Phase 1 ingestion
-          script.
+          Release listings are temporarily unavailable — please check back soon.
         </p>
       ) : releases.length === 0 ? (
         <p className="mt-8 rounded border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
@@ -60,7 +71,7 @@ export default async function Home() {
                 {r.titles.name}
               </Link>
               <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                {platformLabel(r.platform)} · {r.country}
+                {platformLabel(r.platform)} · {COUNTRY_LABELS[r.country] ?? r.country}
                 {r.release_date ? ` · ${r.release_date}` : ""}
               </p>
               {r.generated_content?.meta_description ? (
@@ -74,9 +85,10 @@ export default async function Home() {
       )}
 
       <p className="mt-8 text-xs text-zinc-500">
-        Canonical URLs, hreflang variants, JSON-LD schema and hub pages land in
-        Phases 3–4. Data source: {siteUrl()} reads from Supabase; sitemap
-        regenerates on build.
+        Release data via the TMDB API, refreshed automatically every few
+        hours. Browse by <Link href="/platform" className="underline">platform</Link>,{" "}
+        <Link href="/country" className="underline">country</Link>, or{" "}
+        <Link href="/language" className="underline">language</Link>.
       </p>
     </div>
   );
