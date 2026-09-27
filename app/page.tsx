@@ -1,0 +1,83 @@
+import Link from "next/link";
+import { getDb, type ReleasePageRow } from "@/lib/db";
+import { platformLabel, siteUrl } from "@/lib/site";
+
+export const revalidate = 3600;
+
+async function getLatestReleases(): Promise<ReleasePageRow[]> {
+  const db = getDb();
+  const { data, error } = await db
+    .from("releases")
+    .select("*, titles!inner(*), generated_content(*)")
+    .eq("processed", true)
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .limit(24);
+  if (error) throw error;
+  return (data ?? []) as unknown as ReleasePageRow[];
+}
+
+export default async function Home() {
+  let releases: ReleasePageRow[] = [];
+  let dbError: string | null = null;
+  try {
+    releases = await getLatestReleases();
+  } catch (e) {
+    dbError = e instanceof Error ? e.message : "Database unavailable";
+  }
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold tracking-tight">
+        New &amp; upcoming streaming releases
+      </h1>
+      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        Automatically tracked across global and Indian platforms. New pages
+        appear here as the pipeline ingests them — no manual publishing.
+      </p>
+
+      {dbError ? (
+        <p className="mt-8 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          Couldn&apos;t reach the database ({dbError}). If this is a fresh
+          setup, check <code>.env.local</code> and run the Phase 1 ingestion
+          script.
+        </p>
+      ) : releases.length === 0 ? (
+        <p className="mt-8 rounded border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+          No releases published yet — the ingestion pipeline (Phase 1) has not
+          run. Once it does, the latest titles will list here automatically.
+        </p>
+      ) : (
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+          {releases.map((r) => (
+            <li
+              key={r.id}
+              className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              <Link
+                href={`/title/${r.titles.slug}/${r.country.toLowerCase()}`}
+                className="font-medium hover:underline"
+              >
+                {r.titles.name}
+              </Link>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                {platformLabel(r.platform)} · {r.country}
+                {r.release_date ? ` · ${r.release_date}` : ""}
+              </p>
+              {r.generated_content?.meta_description ? (
+                <p className="mt-2 text-sm">
+                  {r.generated_content.meta_description}
+                </p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-8 text-xs text-zinc-500">
+        Canonical URLs, hreflang variants, JSON-LD schema and hub pages land in
+        Phases 3–4. Data source: {siteUrl()} reads from Supabase; sitemap
+        regenerates on build.
+      </p>
+    </div>
+  );
+}
