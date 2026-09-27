@@ -1,41 +1,22 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { InFeedBanner } from "@/components/AdBanner";
-import { getDb, type ReleasePageRow } from "@/lib/db";
-import { COUNTRY_LABELS, platformLabel } from "@/lib/site";
+import LoadMore from "@/components/LoadMore";
+import ReleaseCard from "@/components/ReleaseCard";
+import { getLatestCards } from "@/lib/release-pages";
 
 export const revalidate = 3600;
 
-async function getLatestReleases(): Promise<ReleasePageRow[]> {
-  const db = getDb();
-  const { data, error } = await db
-    .from("releases")
-    .select("*, titles!inner(*), generated_content(*)")
-    .eq("processed", true)
-    .order("release_date", { ascending: false, nullsFirst: false })
-    .limit(48);
-  if (error) throw error;
-  // One card per title+country: language variants share a page, so prefer
-  // the English row and drop the rest (no duplicate-looking cards).
-  const seen = new Set<string>();
-  const out: ReleasePageRow[] = [];
-  const rows = (data ?? []) as unknown as ReleasePageRow[];
-  for (const r of [...rows].sort((a, b) => Number(a.language !== "en") - Number(b.language !== "en"))) {
-    const key = `${r.title_id}/${r.country}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(r);
-  }
-  return out
-    .sort((a, b) => (b.release_date ?? "").localeCompare(a.release_date ?? ""))
-    .slice(0, 24);
-}
+const PER_PAGE = 20;
 
 export default async function Home() {
-  let releases: ReleasePageRow[] = [];
+  let cards: Awaited<ReturnType<typeof getLatestCards>>["cards"] = [];
+  let hasMore = false;
   let dbError: string | null = null;
   try {
-    releases = await getLatestReleases();
+    const res = await getLatestCards(1, PER_PAGE);
+    cards = res.cards;
+    hasMore = res.hasMore;
   } catch (e) {
     dbError = e instanceof Error ? e.message : "Database unavailable";
   }
@@ -54,39 +35,22 @@ export default async function Home() {
         <p className="mt-8 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           Release listings are temporarily unavailable — please check back soon.
         </p>
-      ) : releases.length === 0 ? (
+      ) : cards.length === 0 ? (
         <p className="mt-8 rounded border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
           No releases published yet — the ingestion pipeline (Phase 1) has not
           run. Once it does, the latest titles will list here automatically.
         </p>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {releases.map((r, i) => (
-            <Fragment key={r.id}>
-              <li
-                className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
-              >
-              <Link
-                href={`/title/${r.titles.slug}/${r.country.toLowerCase()}`}
-                className="font-medium hover:underline"
-              >
-                {r.titles.name}
-              </Link>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                {platformLabel(r.platform)} · {COUNTRY_LABELS[r.country] ?? r.country}
-                {r.release_date ? ` · ${r.release_date}` : ""}
-              </p>
-              {r.generated_content?.meta_description ? (
-                <p className="mt-2 text-sm">
-                  {r.generated_content.meta_description}
-                </p>
-              ) : null}
-              </li>
+          {cards.map((c, i) => (
+            <Fragment key={c.id}>
+              <ReleaseCard card={c} />
               {/* Single in-feed slot (after 3rd card): the native container id
                   is key-derived, so repeats would race — one per page. */}
               {i === 2 && <InFeedBanner />}
             </Fragment>
           ))}
+          <LoadMore initialHasMore={hasMore} />
         </ul>
       )}
 

@@ -109,6 +109,64 @@ export function posterUrl(posterPath: string | null): string | null {
   return posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null;
 }
 
+export interface LatestCard {
+  id: string;
+  slug: string;
+  name: string;
+  country: string;
+  platform: string;
+  releaseDate: string | null;
+  metaDescription: string | null;
+}
+
+/**
+ * Paginated latest-release cards, one per title+country (language variants
+ * share a page — prefer English). Over-fetches to survive dedupe; exact
+ * while variant counts stay small (≤6 per key), revisit past thousands.
+ */
+export async function getLatestCards(
+  page: number,
+  perPage: number,
+): Promise<{ cards: LatestCard[]; hasMore: boolean }> {
+  const safePage = Math.max(1, Math.floor(page));
+  const db = getDb();
+  const { data, error } = await db
+    .from("releases")
+    .select("id, title_id, country, platform, language, release_date, titles!inner(slug, name), generated_content(meta_description)")
+    .eq("processed", true)
+    .order("release_date", { ascending: false, nullsFirst: false })
+    .limit(safePage * perPage + 12);
+  if (error || !data) return { cards: [], hasMore: false };
+  const seen = new Set<string>();
+  const cards: LatestCard[] = [];
+  const rows = (data as unknown as {
+    id: string;
+    title_id: string;
+    country: string;
+    platform: string;
+    language: string;
+    release_date: string | null;
+    titles: { slug: string; name: string };
+    generated_content: { meta_description: string | null } | null;
+  }[]).sort((a, b) => Number(a.language !== "en") - Number(b.language !== "en"));
+  for (const r of rows) {
+    const key = `${r.title_id}/${r.country}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    cards.push({
+      id: r.id,
+      slug: r.titles.slug,
+      name: r.titles.name,
+      country: r.country,
+      platform: r.platform,
+      releaseDate: r.release_date,
+      metaDescription: r.generated_content?.meta_description ?? null,
+    });
+  }
+  cards.sort((a, b) => (b.releaseDate ?? "").localeCompare(a.releaseDate ?? ""));
+  return { cards: cards.slice((safePage - 1) * perPage, safePage * perPage), hasMore: cards.length > safePage * perPage };
+}
+
 export type HubKind = "platform" | "country" | "language";
 
 export interface HubEntry {

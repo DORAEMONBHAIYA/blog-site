@@ -29,14 +29,10 @@ function useInjectSnippet(id: string, code: string | null, container?: React.Ref
 }
 
 export function MonetagTags() {
-  const vignette = process.env.NEXT_PUBLIC_MONETAG_VIGNETTE_ZONE;
+  // Vignette deliberately disabled (user report: too aggressive — it
+  // hijacked navigation in testing). Code path kept so it can return
+  // via env alone; in-page push stays as the single Monetag format.
   const inpush = process.env.NEXT_PUBLIC_MONETAG_INPAGEPUSH_ZONE;
-  useInjectSnippet(
-    "monetag-vignette",
-    vignette
-      ? `(function(s){s.dataset.zone='${vignette}',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`
-      : null,
-  );
   useInjectSnippet(
     "monetag-inpagepush",
     inpush

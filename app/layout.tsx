@@ -71,10 +71,23 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             >
               Languages
             </Link>
+            <form action="/search" method="get" role="search" className="ml-auto">
+              <input
+                type="search"
+                name="q"
+                required
+                minLength={2}
+                maxLength={80}
+                placeholder="Search titles…"
+                aria-label="Search titles"
+                className="w-36 rounded border border-zinc-300 bg-white px-2 py-1 text-sm focus:w-52 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 sm:w-44"
+              />
+            </form>
           </nav>
           <div className="mx-auto max-w-5xl px-4 pb-3">
             <AdBanner />
-          </div>        </header>
+          </div>
+        </header>
 
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
           {children}
