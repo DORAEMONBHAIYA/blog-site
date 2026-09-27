@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   },
   description:
     "Automated tracker for streaming release dates across Netflix, Prime Video, Disney+, JioHotstar, SonyLIV, Zee5 and more — global and India regional languages.",
+  verification: {
+    google: "MSnXIkPiwpkgU34JXcQFq4txCXbZuSSCsSYOBvSbkAw",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
