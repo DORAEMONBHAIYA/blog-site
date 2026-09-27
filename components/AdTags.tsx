@@ -62,6 +62,39 @@ export function RefreshScope({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * Adsterra native unit: an external script that fills a fixed container
+ * div (container-{key}). Unlike the iframe pattern there is no atOptions —
+ * the script finds its container by id. Because the container id derives
+ * from the key, the SAME key can only fill ONE slot per page (duplicate
+ * ids race), so callers must render at most one native unit per page.
+ */
+export function NativeBannerUnit({ scriptSrc }: { scriptSrc: string }) {
+  const slotRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const slot = slotRef.current;
+    if (!slot) return;
+    const m = scriptSrc.match(/([a-f0-9]{32})/);
+    if (!m) return;
+    slot.id = `container-${m[1]}`;
+    slot.querySelectorAll("script").forEach((n) => n.remove());
+    const s = document.createElement("script");
+    s.src = scriptSrc;
+    s.async = true;
+    (s as HTMLScriptElement).dataset.cfasync = "false";
+    slot.appendChild(s);
+    return () => {
+      slot.querySelectorAll("script").forEach((n) => n.remove());
+    };
+  }, [scriptSrc]);
+  return (
+    <div
+      ref={slotRef}
+      style={{ minHeight: 250, maxWidth: "100%" }}
+      className="flex items-center justify-center overflow-hidden"
+    />
+  );
+}
+/**
  * Generic Adsterra iframe-banner unit (atOptions + invoke.js pattern).
  * One instance per placement; useId keeps element ids unique when several
  * units share a page. NOTE: concurrent units share the global atOptions

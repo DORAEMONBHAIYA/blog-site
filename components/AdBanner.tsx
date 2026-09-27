@@ -1,5 +1,5 @@
 import AdSlot from "./AdSlot";
-import { AdBannerUnit, RefreshScope } from "./AdTags";
+import { AdBannerUnit, NativeBannerUnit, RefreshScope } from "./AdTags";
 
 /**
  * Server wrappers: read env (build/request time), render placeholder
@@ -28,12 +28,15 @@ export function FooterBanner() {
 }
 
 export function InFeedBanner() {
-  const key = process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_KEY;
-  if (!key) return null;
+  // NEXT_PUBLIC_ADSTERRA_NATIVE_KEY holds the full native script src; the
+  // container id derives from the key inside it. One slot per page only —
+  // callers insert after the 3rd card; duplicate container ids would race.
+  const src = process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_KEY;
+  if (!src) return null;
   return (
     <li aria-hidden="true" className="list-none">
       <RefreshScope>
-        <AdBannerUnit bannerKey={key} width={300} height={250} />
+        <NativeBannerUnit scriptSrc={src} />
       </RefreshScope>
     </li>
   );

@@ -42,7 +42,9 @@ export default function HubPage({
             </p>
             {e.metaDescription && <p className="mt-2 text-sm">{e.metaDescription}</p>}
             </li>
-            {(i + 1) % 3 === 0 && <InFeedBanner />}
+            {/* Single in-feed slot (after 3rd card): the native container id
+                is key-derived, so repeats would race — one per page. */}
+            {i === 2 && <InFeedBanner />}
           </Fragment>
         ))}
       </ul>
