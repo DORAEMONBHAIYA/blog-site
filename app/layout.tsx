@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import AdSlot from "@/components/AdSlot";
-import AdBanner from "@/components/AdBanner";
+import AdBanner, { FooterBanner } from "@/components/AdBanner";
 import AdScripts from "@/components/AdScripts";
+import { RefreshScope } from "@/components/AdTags";
 import { SITE_NAME, TMDB_ATTRIBUTION } from "@/lib/site";
 import "./globals.css";
 
@@ -74,8 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </nav>
           <div className="mx-auto max-w-5xl px-4 pb-3">
             <AdBanner />
-          </div>
-        </header>
+          </div>        </header>
 
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
           {children}
@@ -84,7 +83,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="border-t border-zinc-200 dark:border-zinc-800">
           <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-zinc-600 dark:text-zinc-400">
             <div className="mb-4">
-              <AdSlot slot="footer" className="h-[90px]" />
+              <FooterBanner />
             </div>
             <p>{TMDB_ATTRIBUTION}</p>
             <p className="mt-2">
@@ -104,7 +103,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </p>
           </div>
         </footer>
-        <AdScripts />
+        <RefreshScope>
+          <AdScripts />
+        </RefreshScope>
       </body>
     </html>
   );

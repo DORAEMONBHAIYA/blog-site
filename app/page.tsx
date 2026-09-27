@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Fragment } from "react";
+import { InFeedBanner } from "@/components/AdBanner";
 import { getDb, type ReleasePageRow } from "@/lib/db";
 import { COUNTRY_LABELS, platformLabel } from "@/lib/site";
 
@@ -59,11 +61,11 @@ export default async function Home() {
         </p>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {releases.map((r) => (
-            <li
-              key={r.id}
-              className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
-            >
+          {releases.map((r, i) => (
+            <Fragment key={r.id}>
+              <li
+                className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+              >
               <Link
                 href={`/title/${r.titles.slug}/${r.country.toLowerCase()}`}
                 className="font-medium hover:underline"
@@ -79,7 +81,9 @@ export default async function Home() {
                   {r.generated_content.meta_description}
                 </p>
               ) : null}
-            </li>
+              </li>
+              {(i + 1) % 3 === 0 && <InFeedBanner />}
+            </Fragment>
           ))}
         </ul>
       )}

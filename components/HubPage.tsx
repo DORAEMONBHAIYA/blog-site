@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Fragment } from "react";
+import { InFeedBanner } from "./AdBanner";
 import type { HubEntry, HubKind } from "@/lib/release-pages";
 import { COUNTRY_LABELS, LANGUAGE_LABELS, platformLabel } from "@/lib/site";
 
@@ -23,11 +25,11 @@ export default function HubPage({
         {entries.length} streaming release{entries.length === 1 ? "" : "s"} tracked automatically.
       </p>
       <ul className="mt-6 space-y-4">
-        {entries.map((e) => (
-          <li
-            key={e.releaseId}
-            className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
-          >
+        {entries.map((e, i) => (
+          <Fragment key={e.releaseId}>
+            <li
+              className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+            >
             <Link
               href={`/title/${e.slug}/${e.country.toLowerCase()}`}
               className="font-medium hover:underline"
@@ -39,7 +41,9 @@ export default function HubPage({
               {e.releaseDate ? ` · ${e.releaseDate}` : ""}
             </p>
             {e.metaDescription && <p className="mt-2 text-sm">{e.metaDescription}</p>}
-          </li>
+            </li>
+            {(i + 1) % 3 === 0 && <InFeedBanner />}
+          </Fragment>
         ))}
       </ul>
     </div>
