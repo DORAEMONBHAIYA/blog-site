@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import AdSlot from "@/components/AdSlot";
+import AdScripts from "@/components/AdScripts";
 import { SITE_NAME, TMDB_ATTRIBUTION } from "@/lib/site";
 import "./globals.css";
 
@@ -102,6 +103,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </p>
           </div>
         </footer>
+        <AdScripts />
       </body>
     </html>
   );
