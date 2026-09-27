@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import AdSlot from "@/components/AdSlot";
+import AdBanner from "@/components/AdBanner";
 import AdScripts from "@/components/AdScripts";
 import { SITE_NAME, TMDB_ATTRIBUTION } from "@/lib/site";
 import "./globals.css";
@@ -72,7 +73,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
           </nav>
           <div className="mx-auto max-w-5xl px-4 pb-3">
-            <AdSlot slot="header" className="h-[90px]" />
+            <AdBanner />
           </div>
         </header>
 
